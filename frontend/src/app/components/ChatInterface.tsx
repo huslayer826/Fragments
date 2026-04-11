@@ -11,6 +11,13 @@ interface Message {
   sources?: string[];
 }
 
+const SUGGESTIONS = [
+  { icon: "warning", text: "What's the biggest risk on my network?" },
+  { icon: "bug_report", text: "Which devices have critical vulnerabilities?" },
+  { icon: "devices", text: "Show me all IoT devices" },
+  { icon: "shield", text: "Summarize compliance gaps" },
+];
+
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -21,8 +28,8 @@ export default function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  async function handleSend() {
-    const question = input.trim();
+  async function handleSend(prefill?: string) {
+    const question = (prefill ?? input).trim();
     if (!question || loading) return;
 
     setInput("");
@@ -55,110 +62,151 @@ export default function ChatInterface() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+      <div className="flex-1 overflow-y-auto space-y-6 pb-4 pr-2">
         {messages.length === 0 && (
-          <div className="text-center py-12" style={{ color: "var(--text-ghost)" }}>
+          <div className="text-center py-12">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl accent-gradient mb-4">
+              <span className="material-symbols-outlined text-white" style={{ fontSize: 32 }}>
+                smart_toy
+              </span>
+            </div>
             <p
-              className="mb-2"
+              className="mb-1"
               style={{
                 fontFamily: "var(--font-serif)",
                 fontStyle: "italic",
-                fontSize: "24px",
+                fontSize: "32px",
                 color: "var(--text-primary)",
               }}
             >
               Fragments AI
             </p>
-            <p className="text-sm">Ask questions about your network security posture.</p>
-            <div
-              className="mt-6 inline-flex flex-col gap-2 items-start text-left"
-              style={{
-                color: "var(--text-secondary)",
-                fontFamily: "var(--font-mono)",
-                fontSize: "12px",
-              }}
-            >
-              <p>&gt; What&rsquo;s the biggest risk on my network?</p>
-              <p>&gt; Which devices have critical vulnerabilities?</p>
-              <p>&gt; Show me all IoT devices</p>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              Ask questions about your network security posture.
+            </p>
+            <div className="mt-8 grid grid-cols-2 gap-3 max-w-2xl mx-auto">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s.text}
+                  onClick={() => handleSend(s.text)}
+                  className="flex items-center gap-3 p-4 rounded-xl text-left transition-colors hover:bg-[var(--bg-elevated)]"
+                  style={{
+                    background: "var(--bg-card)",
+                    border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+                  }}
+                >
+                  <span
+                    className="material-symbols-outlined flex-shrink-0"
+                    style={{ color: "var(--orange-light)", fontSize: 20 }}
+                  >
+                    {s.icon}
+                  </span>
+                  <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                    {s.text}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className="max-w-[80%] rounded-xl px-4 py-3"
-              style={{
-                background: msg.role === "user" ? "var(--orange)" : "var(--bg-card)",
-                color: msg.role === "user" ? "var(--white)" : "var(--text-primary)",
-                border: msg.role === "user"
-                  ? "none"
-                  : "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
-              }}
-            >
-              {msg.role === "user" ? (
-                <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
-              ) : (
+        {messages.map((msg, i) =>
+          msg.role === "user" ? (
+            <div key={i} className="flex justify-end gap-4">
+              <div
+                className="max-w-[75%] p-4 rounded-2xl rounded-tr-none text-sm"
+                style={{
+                  background: "var(--bg-card)",
+                  color: "var(--text-primary)",
+                  border: "1px solid color-mix(in srgb, var(--bg-border) 40%, transparent)",
+                }}
+              >
+                <div className="whitespace-pre-wrap">{msg.content}</div>
+              </div>
+              <div
+                className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center"
+                style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)" }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
+                  person
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div key={i} className="flex justify-start gap-4">
+              <div className="w-10 h-10 rounded-xl accent-gradient flex-shrink-0 flex items-center justify-center">
+                <span className="material-symbols-outlined text-white" style={{ fontSize: 20 }}>
+                  smart_toy
+                </span>
+              </div>
+              <div
+                className="max-w-[80%] p-6 rounded-2xl rounded-tl-none"
+                style={{
+                  background: "var(--bg-card)",
+                  borderLeft: "4px solid var(--orange)",
+                  border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+                  borderLeftWidth: "4px",
+                  borderLeftColor: "var(--orange)",
+                }}
+              >
                 <div className="frag-md text-sm">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.content}
-                  </ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                 </div>
-              )}
-              {msg.sources && msg.sources.length > 0 && (
-                <div
-                  className="mt-3 pt-2 border-t"
-                  style={{
-                    borderColor: msg.role === "user"
-                      ? "color-mix(in srgb, var(--white) 30%, transparent)"
-                      : "color-mix(in srgb, var(--bg-border) 40%, transparent)",
-                  }}
-                >
-                  <p
-                    className="mb-1.5"
+                {msg.sources && msg.sources.length > 0 && (
+                  <div
+                    className="mt-4 pt-3 border-t flex flex-wrap gap-1.5"
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "10px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.1em",
-                      color: msg.role === "user" ? "var(--white)" : "var(--text-ghost)",
-                      opacity: msg.role === "user" ? 0.7 : 1,
+                      borderColor: "color-mix(in srgb, var(--bg-border) 40%, transparent)",
                     }}
                   >
-                    Sources
-                  </p>
-                  <div className="flex flex-wrap gap-1">
+                    <span
+                      className="mr-1 self-center"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "9px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.12em",
+                        color: "var(--text-ghost)",
+                      }}
+                    >
+                      Sources
+                    </span>
                     {msg.sources.map((src, j) => (
                       <span
                         key={j}
-                        className="px-2 py-0.5 rounded-md"
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-md"
                         style={{
+                          background: "var(--bg-deep)",
                           fontFamily: "var(--font-mono)",
                           fontSize: "10px",
-                          background: "var(--black)",
                           color: "var(--text-secondary)",
-                          border: "1px solid color-mix(in srgb, var(--bg-border) 40%, transparent)",
                         }}
                       >
+                        <span className="material-symbols-outlined" style={{ fontSize: 12 }}>
+                          database
+                        </span>
                         {src}
                       </span>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        )}
 
         {loading && (
-          <div className="flex justify-start">
+          <div className="flex justify-start gap-4">
+            <div className="w-10 h-10 rounded-xl accent-gradient flex-shrink-0 flex items-center justify-center">
+              <span
+                className="material-symbols-outlined text-white animate-spin"
+                style={{ fontSize: 20 }}
+              >
+                progress_activity
+              </span>
+            </div>
             <div
-              className="rounded-xl px-4 py-3"
+              className="p-4 rounded-2xl rounded-tl-none"
               style={{
                 background: "var(--bg-card)",
                 color: "var(--text-ghost)",
@@ -167,7 +215,7 @@ export default function ChatInterface() {
                 border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
               }}
             >
-              analyzing…
+              analyzing network data…
             </div>
           </div>
         )}
@@ -175,29 +223,43 @@ export default function ChatInterface() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <div
-        className="pt-4 flex gap-2"
-        style={{
-          borderTop: "1px solid color-mix(in srgb, var(--bg-border) 40%, transparent)",
-        }}
+        className="pt-4 relative"
+        style={{ borderTop: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)" }}
       >
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask about your network…"
-          disabled={loading}
-          className="frag-input flex-1"
-        />
-        <button
-          onClick={handleSend}
-          disabled={loading || !input.trim()}
-          className="frag-btn-primary"
+        <div
+          className="flex items-center gap-2 p-2 rounded-2xl"
+          style={{
+            background: "var(--bg-card)",
+            border: "1px solid color-mix(in srgb, var(--bg-border) 40%, transparent)",
+          }}
         >
-          Send
-        </button>
+          <span
+            className="material-symbols-outlined ml-2"
+            style={{ color: "var(--text-ghost)", fontSize: 20 }}
+          >
+            chat
+          </span>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask about your network…"
+            disabled={loading}
+            className="flex-1 bg-transparent outline-none text-sm py-2"
+            style={{ color: "var(--text-primary)", fontFamily: "var(--font-sans)" }}
+          />
+          <button
+            onClick={() => handleSend()}
+            disabled={loading || !input.trim()}
+            className="accent-gradient w-10 h-10 rounded-xl flex items-center justify-center disabled:opacity-40"
+          >
+            <span className="material-symbols-outlined text-white" style={{ fontSize: 20 }}>
+              send
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -54,20 +54,48 @@ export default function ComplianceUpload({ onUploadComplete }: ComplianceUploadP
   }
 
   return (
-    <div className="frag-card">
-      <h3
-        className="mb-4"
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontWeight: 600,
-          fontSize: "14px",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          color: "var(--text-primary)",
-        }}
-      >
-        Upload Compliance Framework
-      </h3>
+    <div
+      className="rounded-2xl p-6"
+      style={{
+        background: "var(--bg-deeper)",
+        border: "1px dashed color-mix(in srgb, var(--bg-border) 55%, transparent)",
+      }}
+    >
+      <div className="flex flex-col items-center text-center mb-4">
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center mb-3"
+          style={{ background: "color-mix(in srgb, var(--orange) 12%, transparent)" }}
+        >
+          <span
+            className="material-symbols-outlined"
+            style={{ fontSize: 32, color: "var(--orange-light)" }}
+          >
+            cloud_upload
+          </span>
+        </div>
+        <h3
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 700,
+            fontSize: "16px",
+            color: "var(--text-primary)",
+          }}
+        >
+          Upload Compliance Framework
+        </h3>
+        <p
+          className="mt-1"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "10px",
+            textTransform: "uppercase",
+            letterSpacing: "0.12em",
+            color: "var(--text-ghost)",
+          }}
+        >
+          JSON controls · CIS · NIST · PCI-DSS
+        </p>
+      </div>
 
       <input
         type="text"
@@ -78,10 +106,10 @@ export default function ComplianceUpload({ onUploadComplete }: ComplianceUploadP
       />
 
       <textarea
-        placeholder='Paste JSON controls: [{"control_id": "1.1", "title": "...", "description": "...", "category": "...", "severity": "medium"}]'
+        placeholder='[{"control_id": "1.1", "title": "...", "description": "...", "category": "...", "severity": "medium"}]'
         value={fileContent}
         onChange={(e) => setFileContent(e.target.value)}
-        rows={6}
+        rows={5}
         className="frag-input w-full mb-4"
         style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }}
       />
@@ -89,8 +117,12 @@ export default function ComplianceUpload({ onUploadComplete }: ComplianceUploadP
       <button
         onClick={handleUpload}
         disabled={uploading || !frameworkName.trim() || !fileContent.trim()}
-        className="frag-btn-primary"
+        className="accent-gradient w-full py-3 rounded-xl text-white font-semibold text-xs uppercase disabled:opacity-50 flex items-center justify-center gap-2"
+        style={{ letterSpacing: "0.12em" }}
       >
+        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+          {uploading ? "progress_activity" : "upload_file"}
+        </span>
         {uploading ? "Uploading…" : "Upload Framework"}
       </button>
 
