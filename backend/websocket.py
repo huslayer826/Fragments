@@ -21,20 +21,22 @@ class ConnectionManager:
         logger.info("WebSocket client connected (%d total)", len(self.active_connections))
 
     def disconnect(self, websocket: WebSocket) -> None:
-        self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
         logger.info("WebSocket client disconnected (%d total)", len(self.active_connections))
 
     async def broadcast(self, event: str, data: Any = None) -> None:
         """Broadcast an event to all connected clients."""
         message = json.dumps({"event": event, "data": data})
         disconnected: list[WebSocket] = []
-        for connection in self.active_connections:
+        for connection in list(self.active_connections):
             try:
                 await connection.send_text(message)
             except Exception:
                 disconnected.append(connection)
         for conn in disconnected:
-            self.active_connections.remove(conn)
+            if conn in self.active_connections:
+                self.active_connections.remove(conn)
 
 
 manager = ConnectionManager()
