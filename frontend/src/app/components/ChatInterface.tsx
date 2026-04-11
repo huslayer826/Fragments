@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { api } from "@/lib/api";
 
 interface Message {
@@ -99,7 +101,15 @@ export default function ChatInterface() {
                   : "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
               }}
             >
-              <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+              {msg.role === "user" ? (
+                <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+              ) : (
+                <div className="frag-md text-sm">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
+              )}
               {msg.sources && msg.sources.length > 0 && (
                 <div
                   className="mt-3 pt-2 border-t"
