@@ -8,7 +8,6 @@ interface RiskScoreBadgeProps {
 function getRiskColor(score: number): string {
   if (score <= 20) return "var(--status-healthy)";
   if (score <= 50) return "var(--status-warning)";
-  if (score <= 75) return "var(--status-elevated)";
   return "var(--status-critical)";
 }
 
@@ -22,19 +21,29 @@ function getRiskLabel(score: number): string {
 export default function RiskScoreBadge({ score, size = "md" }: RiskScoreBadgeProps) {
   const color = getRiskColor(score);
   const label = getRiskLabel(score);
-  const sizeClasses = {
-    sm: "text-xs px-1.5 py-0.5",
-    md: "text-sm px-2 py-1",
-    lg: "text-base px-3 py-1.5",
-  };
+
+  const sizeStyles = {
+    sm: { fontSize: "10px", padding: "3px 8px" },
+    md: { fontSize: "11px", padding: "4px 12px" },
+    lg: { fontSize: "13px", padding: "6px 14px" },
+  }[size];
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded font-mono font-medium ${sizeClasses[size]}`}
-      style={{ color, borderColor: color, border: "1px solid" }}
+      className="inline-flex items-center gap-1.5 rounded-md"
+      style={{
+        ...sizeStyles,
+        fontFamily: "var(--font-mono)",
+        fontWeight: 600,
+        textTransform: "uppercase",
+        letterSpacing: "0.1em",
+        color: color,
+        background: `color-mix(in srgb, ${color} 18%, transparent)`,
+        border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
+      }}
     >
       <span
-        className="w-2 h-2 rounded-full"
+        className="w-1.5 h-1.5 rounded-full"
         style={{ backgroundColor: color }}
       />
       {Math.round(score)} {label}

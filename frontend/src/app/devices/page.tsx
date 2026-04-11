@@ -26,30 +26,43 @@ export default function DevicesPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">Device Inventory</h2>
+      <p
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "10px",
+          textTransform: "uppercase",
+          letterSpacing: "0.16em",
+          color: "var(--text-ghost)",
+          marginBottom: "6px",
+        }}
+      >
+        Inventory
+      </p>
+      <h2
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontWeight: 700,
+          fontSize: "32px",
+          letterSpacing: "-0.02em",
+          marginBottom: "24px",
+        }}
+      >
+        Device Inventory
+      </h2>
 
-      <div className="flex gap-4 mb-4">
+      <div className="flex gap-3 mb-5">
         <input
           type="text"
-          placeholder="Search by IP, hostname, vendor, or MAC..."
+          placeholder="Search by IP, hostname, vendor, or MAC…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-3 py-2 rounded-lg border text-sm"
-          style={{
-            background: "var(--bg-tertiary)",
-            borderColor: "var(--border-color)",
-            color: "var(--text-primary)",
-          }}
+          className="frag-input flex-1"
         />
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-          className="px-3 py-2 rounded-lg border text-sm"
-          style={{
-            background: "var(--bg-tertiary)",
-            borderColor: "var(--border-color)",
-            color: "var(--text-primary)",
-          }}
+          className="frag-input"
+          style={{ paddingRight: "32px" }}
         >
           <option value="risk_score">Sort by Risk</option>
           <option value="ip">Sort by IP</option>
@@ -58,44 +71,82 @@ export default function DevicesPage() {
       </div>
 
       {loading ? (
-        <p style={{ color: "var(--text-muted)" }}>Loading...</p>
+        <p style={{ color: "var(--text-ghost)", fontFamily: "var(--font-mono)", fontSize: "12px" }}>
+          Loading…
+        </p>
       ) : (
         <div
-          className="rounded-lg border overflow-hidden"
-          style={{ borderColor: "var(--border-color)" }}
+          className="rounded-xl overflow-hidden"
+          style={{
+            background: "var(--bg-card)",
+            border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+          }}
         >
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: "var(--bg-tertiary)" }}>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: "var(--text-muted)" }}>IP</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: "var(--text-muted)" }}>Hostname</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: "var(--text-muted)" }}>Vendor</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: "var(--text-muted)" }}>Type</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: "var(--text-muted)" }}>OS</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: "var(--text-muted)" }}>Ports</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: "var(--text-muted)" }}>Risk</th>
+              <tr style={{ background: "var(--black)" }}>
+                {["IP", "Hostname", "Vendor", "Type", "OS", "Ports", "Risk"].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-4 py-3"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "10px",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.12em",
+                      color: "var(--text-ghost)",
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((device) => (
                 <tr
                   key={device.mac}
-                  className="border-t hover:bg-white/5 transition-colors"
-                  style={{ borderColor: "var(--border-color)" }}
+                  style={{
+                    borderTop: "1px solid color-mix(in srgb, var(--bg-border) 25%, transparent)",
+                  }}
                 >
-                  <td className="px-4 py-3 font-mono">{device.ip}</td>
-                  <td className="px-4 py-3">{device.hostname || "—"}</td>
-                  <td className="px-4 py-3" style={{ color: "var(--text-secondary)" }}>{device.vendor || "Unknown"}</td>
+                  <td
+                    className="px-4 py-3"
+                    style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--orange)" }}
+                  >
+                    {device.ip}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: "var(--text-primary)" }}>
+                    {device.hostname || "—"}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: "var(--text-secondary)" }}>
+                    {device.vendor || "Unknown"}
+                  </td>
                   <td className="px-4 py-3">
                     <span
-                      className="text-xs px-2 py-0.5 rounded"
-                      style={{ background: "var(--bg-surface)", color: "var(--text-secondary)" }}
+                      className="rounded-md"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "10px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        padding: "3px 8px",
+                        background: "var(--bg-elevated)",
+                        color: "var(--text-secondary)",
+                        border: "1px solid color-mix(in srgb, var(--bg-border) 40%, transparent)",
+                      }}
                     >
                       {device.device_type}
                     </span>
                   </td>
-                  <td className="px-4 py-3" style={{ color: "var(--text-secondary)" }}>{device.os || "—"}</td>
-                  <td className="px-4 py-3 font-mono" style={{ color: "var(--text-muted)" }}>
+                  <td className="px-4 py-3" style={{ color: "var(--text-secondary)" }}>
+                    {device.os || "—"}
+                  </td>
+                  <td
+                    className="px-4 py-3"
+                    style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-ghost)" }}
+                  >
                     {Object.keys(device.open_ports).length}
                   </td>
                   <td className="px-4 py-3">
@@ -106,7 +157,14 @@ export default function DevicesPage() {
             </tbody>
           </table>
           {filtered.length === 0 && (
-            <p className="p-8 text-center" style={{ color: "var(--text-muted)" }}>
+            <p
+              className="p-8 text-center"
+              style={{
+                color: "var(--text-ghost)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "12px",
+              }}
+            >
               {devices.length === 0 ? "No devices discovered yet." : "No devices match your search."}
             </p>
           )}

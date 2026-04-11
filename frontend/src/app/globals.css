@@ -1,45 +1,243 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
 @import "tailwindcss";
 
+/* ============================================================
+   Fragments Design System v2.0
+   ============================================================ */
 :root {
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #141414;
-  --bg-tertiary: #1a1a1a;
-  --bg-surface: #242424;
-  --text-primary: #ededed;
-  --text-secondary: #a0a0a0;
-  --text-muted: #666666;
-  --accent-orange: #f97316;
-  --accent-orange-dim: #ea580c;
-  --border-color: #2a2a2a;
-  --status-healthy: #22c55e;
-  --status-warning: #eab308;
-  --status-elevated: #f97316;
-  --status-critical: #ef4444;
-  --background: var(--bg-primary);
+  /* Core palette */
+  --black: #222831;
+  --grey: #393E46;
+  --orange: #D65A31;
+  --white: #EEEEEE;
+
+  /* Extended backgrounds */
+  --bg-deep: #1A1F27;
+  --bg-card: #2A303A;
+  --bg-elevated: #313843;
+  --bg-border: #454C57;
+
+  /* Orange ramp */
+  --orange-light: #E8794F;
+  --orange-muted: #B84A28;
+  --orange-deep: #8C3820;
+
+  /* Text hierarchy */
+  --text-primary: #EEEEEE;
+  --text-secondary: #9EA4AE;
+  --text-ghost: #5C636E;
+
+  /* Status / risk */
+  --status-healthy: #D65A31;
+  --status-warning: #E8A84C;
+  --status-critical: #D63A3A;
+  --status-info: #5A8FD6;
+
+  /* Fonts */
+  --font-sans: 'Sora', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-serif: 'Instrument Serif', serif;
+
+  /* ----------------------------------------------------------
+     Legacy aliases (mapped to Fragments tokens) — kept so
+     existing components keep rendering without edits.
+     ---------------------------------------------------------- */
+  --bg-primary: var(--black);
+  --bg-secondary: var(--bg-card);
+  --bg-tertiary: var(--bg-card);
+  --bg-surface: var(--bg-elevated);
+  --text-muted: var(--text-ghost);
+  --accent-orange: var(--orange);
+  --accent-orange-dim: var(--orange-muted);
+  --border-color: var(--bg-border);
+  --status-elevated: var(--orange-light);
+
+  --background: var(--black);
   --foreground: var(--text-primary);
 }
 
+/* Tailwind v4 token bridge — exposes utilities like bg-frag-black,
+   text-frag-orange, bg-bg-card, text-status-warning, font-mono, etc. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --color-frag-black: var(--black);
+  --color-frag-grey: var(--grey);
+  --color-frag-orange: var(--orange);
+  --color-frag-white: var(--white);
+
+  --color-bg-deep: var(--bg-deep);
+  --color-bg-card: var(--bg-card);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-border: var(--bg-border);
+
+  --color-orange-light: var(--orange-light);
+  --color-orange-muted: var(--orange-muted);
+  --color-orange-deep: var(--orange-deep);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-ghost: var(--text-ghost);
+
+  --color-status-healthy: var(--status-healthy);
+  --color-status-warning: var(--status-warning);
+  --color-status-critical: var(--status-critical);
+  --color-status-info: var(--status-info);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
 }
 
-body {
-  background: var(--bg-primary);
+html, body {
+  background: var(--bg-deep);
   color: var(--text-primary);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbar styling for dark theme */
+/* Headings default to Sora */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
+}
+
+/* Mono numerics for data */
+.font-mono, code, pre, kbd, samp {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum', 'zero';
+}
+
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: var(--bg-deep);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-surface);
+  background: var(--bg-border);
   border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-elevated);
+}
+
+/* Selection */
+::selection {
+  background: var(--orange);
+  color: var(--white);
+}
+
+/* ----------------------------------------------------------
+   Reusable design-system component classes
+   ---------------------------------------------------------- */
+
+.frag-card {
+  background: var(--bg-card);
+  border: 1px solid color-mix(in srgb, var(--bg-border) 30%, transparent);
+  border-radius: 12px;
+  padding: 24px 28px;
+}
+
+.frag-card-nested {
+  background: var(--black);
+  border: 1px solid color-mix(in srgb, var(--bg-border) 30%, transparent);
+  border-radius: 12px;
+}
+
+.frag-btn-primary {
+  background: var(--orange);
+  color: var(--white);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 10px 18px;
+  border-radius: 8px;
+  transition: background 120ms ease;
+}
+.frag-btn-primary:hover:not(:disabled) {
+  background: var(--orange-light);
+}
+.frag-btn-primary:active:not(:disabled) {
+  background: var(--orange-muted);
+}
+.frag-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.frag-btn-secondary {
+  background: transparent;
+  color: var(--orange);
+  border: 1px solid color-mix(in srgb, var(--orange) 50%, transparent);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 10px 18px;
+  border-radius: 8px;
+  transition: all 120ms ease;
+}
+.frag-btn-secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--orange) 12%, transparent);
+}
+.frag-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.frag-btn-ghost {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--bg-border);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 10px 18px;
+  border-radius: 8px;
+  transition: all 120ms ease;
+}
+.frag-btn-ghost:hover:not(:disabled) {
+  background: var(--bg-border);
+  color: var(--text-primary);
+}
+.frag-btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.frag-input {
+  background: var(--black);
+  border: 1px solid var(--bg-border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  transition: border-color 120ms ease;
+}
+.frag-input:focus {
+  outline: none;
+  border-color: var(--orange);
+}
+.frag-input::placeholder {
+  color: var(--text-ghost);
+}
+
+.frag-label {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-ghost);
 }

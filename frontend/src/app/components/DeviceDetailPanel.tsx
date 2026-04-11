@@ -15,43 +15,67 @@ export default function DeviceDetailPanel({ device, onClose }: DeviceDetailPanel
 
   return (
     <div
-      className="w-80 border-l overflow-y-auto h-full"
-      style={{ background: "var(--bg-secondary)", borderColor: "var(--border-color)" }}
+      className="w-80 overflow-y-auto h-full"
+      style={{
+        background: "var(--bg-card)",
+        borderLeft: "1px solid color-mix(in srgb, var(--bg-border) 40%, transparent)",
+      }}
     >
-      <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: "var(--border-color)" }}>
-        <h3 className="font-bold text-sm">{device.hostname || device.ip}</h3>
+      <div
+        className="px-5 py-4 flex items-center justify-between"
+        style={{
+          borderBottom: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+        }}
+      >
+        <h3
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: "13px",
+            color: "var(--text-primary)",
+          }}
+        >
+          {device.hostname || device.ip}
+        </h3>
         <button
           onClick={onClose}
-          className="text-sm px-2 py-1 rounded hover:bg-white/10"
-          style={{ color: "var(--text-muted)" }}
+          className="rounded-md"
+          style={{
+            color: "var(--text-ghost)",
+            background: "var(--bg-elevated)",
+            padding: "4px 9px",
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+          }}
         >
           ✕
         </button>
       </div>
-      <div className="p-4 space-y-4">
-        <div>
-          <RiskScoreBadge score={device.risk_score} size="lg" />
-        </div>
+      <div className="p-5 space-y-5">
+        <RiskScoreBadge score={device.risk_score} size="lg" />
 
-        <InfoRow label="IP Address" value={device.ip} />
-        <InfoRow label="MAC" value={device.id} />
+        <InfoRow label="IP Address" value={device.ip} mono />
+        <InfoRow label="MAC" value={device.id} mono />
         <InfoRow label="Hostname" value={device.hostname || "—"} />
         <InfoRow label="Vendor" value={device.vendor || "Unknown"} />
         <InfoRow label="Type" value={device.device_type} />
 
         {ports.length > 0 && (
           <div>
-            <p className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
-              Open Ports
-            </p>
+            <p className="frag-label mb-2">Open Ports</p>
             <div className="space-y-1">
               {ports.map(([port, service]) => (
                 <div
                   key={port}
-                  className="flex justify-between text-sm font-mono px-2 py-1 rounded"
-                  style={{ background: "var(--bg-surface)" }}
+                  className="flex justify-between px-3 py-2 rounded-md"
+                  style={{
+                    background: "var(--black)",
+                    border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "12px",
+                  }}
                 >
-                  <span style={{ color: "var(--accent-orange)" }}>{port}</span>
+                  <span style={{ color: "var(--orange)", fontWeight: 600 }}>{port}</span>
                   <span style={{ color: "var(--text-secondary)" }}>{service}</span>
                 </div>
               ))}
@@ -63,11 +87,20 @@ export default function DeviceDetailPanel({ device, onClose }: DeviceDetailPanel
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{label}</p>
-      <p className="text-sm font-mono" style={{ color: "var(--text-primary)" }}>{value}</p>
+      <p className="frag-label">{label}</p>
+      <p
+        style={{
+          marginTop: "4px",
+          fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
+          fontSize: "13px",
+          color: "var(--text-primary)",
+        }}
+      >
+        {value}
+      </p>
     </div>
   );
 }

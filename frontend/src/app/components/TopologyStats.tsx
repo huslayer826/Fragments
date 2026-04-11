@@ -16,13 +16,35 @@ interface StatCardProps {
 function StatCard({ label, value, color }: StatCardProps) {
   return (
     <div
-      className="rounded-lg p-4 border"
-      style={{ background: "var(--bg-tertiary)", borderColor: "var(--border-color)" }}
+      className="rounded-xl p-5"
+      style={{
+        background: "var(--bg-card)",
+        border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+      }}
     >
-      <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>
+      <p
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "10px",
+          fontWeight: 500,
+          textTransform: "uppercase",
+          letterSpacing: "0.12em",
+          color: "var(--text-ghost)",
+          marginBottom: "10px",
+        }}
+      >
         {label}
       </p>
-      <p className="text-2xl font-bold font-mono" style={{ color: color || "var(--text-primary)" }}>
+      <p
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontWeight: 400,
+          fontSize: "28px",
+          letterSpacing: "-0.01em",
+          color: color || "var(--text-primary)",
+          lineHeight: 1,
+        }}
+      >
         {value}
       </p>
     </div>
@@ -32,12 +54,15 @@ function StatCard({ label, value, color }: StatCardProps) {
 export default function TopologyStats({ stats, loading }: TopologyStatsProps) {
   if (loading || !stats) {
     return (
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="rounded-lg p-4 border animate-pulse h-20"
-            style={{ background: "var(--bg-tertiary)", borderColor: "var(--border-color)" }}
+            className="rounded-xl p-5 animate-pulse h-24"
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+            }}
           />
         ))}
       </div>
@@ -46,7 +71,7 @@ export default function TopologyStats({ stats, loading }: TopologyStatsProps) {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <StatCard label="Devices" value={stats.total_devices} />
+      <StatCard label="Devices" value={stats.total_devices} color="var(--orange)" />
       <StatCard
         label="Avg Risk"
         value={stats.avg_risk_score}
@@ -63,7 +88,10 @@ export default function TopologyStats({ stats, loading }: TopologyStatsProps) {
         value={stats.unacknowledged_alerts}
         color={stats.unacknowledged_alerts > 0 ? "var(--status-critical)" : "var(--status-healthy)"}
       />
-      <StatCard label="Last Scan" value={stats.last_scan ? new Date(stats.last_scan).toLocaleTimeString() : "Never"} />
+      <StatCard
+        label="Last Scan"
+        value={stats.last_scan ? new Date(stats.last_scan).toLocaleTimeString() : "Never"}
+      />
     </div>
   );
 }

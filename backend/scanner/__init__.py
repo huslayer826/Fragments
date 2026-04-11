@@ -1,5 +1,6 @@
 """Scanner orchestrator — coordinates ARP, port, OUI, and OS scanning."""
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Any
@@ -32,39 +33,31 @@ async def run_scan(subnet: str | None = None) -> list[Device]:
     from backend.scanner.arp_scanner import arp_scan
     hosts = await arp_scan(subnet)
 
-    devices: list[Device] = []
-    for ip, mac in hosts:
-        # Step 2: OUI vendor lookup
-        from backend.scanner.oui_lookup import lookup_vendor
+    from backend.scanner.oui_lookup import lookup_vendor
+    from backend.scanner.os_fingerprint import fingerprint_os
+    from backend.scanner.port_scanner import scan_ports
+
+    async def _profile_host(ip: str, mac: str) -> Device:
         vendor = lookup_vendor(mac)
-
-        # Step 3: Port scan + service detection
-        from backend.scanner.port_scanner import scan_ports
         port_result = await scan_ports(ip)
-
-        # Step 4: OS fingerprinting (use port scan result first, fallback)
-        os_info = port_result.get("os", "")
-        if not os_info:
-            from backend.scanner.os_fingerprint import fingerprint_os
-            os_info = await fingerprint_os(ip)
-
-        # Determine device type heuristic
+        os_info = port_result.get("os", "") or await fingerprint_os(ip)
         ports = port_result.get("ports", {})
-        device_type = _guess_device_type(ports, vendor)
-
-        device = Device(
+        return Device(
             mac=mac,
             ip=ip,
             hostname="",
             vendor=vendor,
             os=os_info,
-            device_type=device_type,
+            device_type=_guess_device_type(ports, vendor),
             open_ports=ports,
             services={str(k): v for k, v in ports.items()},
             first_seen=now,
             last_seen=now,
         )
-        devices.append(device)
+
+    devices: list[Device] = list(
+        await asyncio.gather(*(_profile_host(ip, mac) for ip, mac in hosts))
+    )
 
     # Score all devices
     from backend.threat.risk_scorer import score_device

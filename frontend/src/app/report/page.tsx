@@ -16,11 +16,12 @@ export default function ReportPage() {
 
     try {
       const res = await fetch(`${API_BASE}/api/report`, { method: "POST" });
-      if (!res.ok) throw new Error("Report generation failed");
+      if (!res.ok) throw new Error(`Report generation failed (${res.status})`);
       const data = await res.json();
       setReportUrl(`${API_BASE}${data.report_url}`);
-    } catch {
-      setError("Failed to generate report. Make sure a scan has been run first.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      setError(`${msg}. Make sure a scan has been run first.`);
     } finally {
       setGenerating(false);
     }
@@ -28,39 +29,82 @@ export default function ReportPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">Security Report</h2>
-      <p className="mb-6 text-sm" style={{ color: "var(--text-secondary)" }}>
-        Generate a comprehensive PDF security assessment report including device inventory,
-        vulnerability findings, topology overview, segmentation recommendations, and remediation checklist.
+      <p
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "10px",
+          textTransform: "uppercase",
+          letterSpacing: "0.16em",
+          color: "var(--text-ghost)",
+          marginBottom: "6px",
+        }}
+      >
+        Deliverable
+      </p>
+      <h2
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontWeight: 700,
+          fontSize: "32px",
+          letterSpacing: "-0.02em",
+        }}
+      >
+        Security Report
+      </h2>
+      <p
+        className="mt-2 mb-8 max-w-2xl"
+        style={{
+          fontFamily: "var(--font-serif)",
+          fontStyle: "italic",
+          fontSize: "16px",
+          color: "var(--text-secondary)",
+        }}
+      >
+        Generate a comprehensive PDF security assessment including device inventory,
+        vulnerability findings, topology overview, segmentation recommendations, and remediation
+        checklist.
       </p>
 
       <button
         onClick={handleGenerate}
         disabled={generating}
-        className="px-6 py-3 rounded-lg font-medium text-sm disabled:opacity-50"
-        style={{ background: "var(--accent-orange)", color: "#000" }}
+        className="frag-btn-primary"
       >
-        {generating ? "Generating Report..." : "Generate Report"}
+        {generating ? "Generating Report…" : "Generate Report"}
       </button>
 
       {error && (
-        <p className="mt-4 text-sm" style={{ color: "var(--status-critical)" }}>{error}</p>
+        <p
+          className="mt-4"
+          style={{
+            color: "var(--status-critical)",
+            fontFamily: "var(--font-mono)",
+            fontSize: "12px",
+          }}
+        >
+          {error}
+        </p>
       )}
 
       {reportUrl && (
-        <div
-          className="mt-6 p-4 rounded-lg border"
-          style={{ background: "var(--bg-tertiary)", borderColor: "var(--border-color)" }}
-        >
-          <p className="text-sm mb-3" style={{ color: "var(--status-healthy)" }}>
-            Report generated successfully.
+        <div className="frag-card mt-6 max-w-xl">
+          <p
+            className="mb-4"
+            style={{
+              color: "var(--status-healthy)",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+            }}
+          >
+            ● Report generated successfully
           </p>
           <a
             href={reportUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block px-4 py-2 rounded-lg text-sm font-medium"
-            style={{ background: "var(--accent-orange)", color: "#000" }}
+            className="frag-btn-secondary inline-block"
           >
             Download PDF Report
           </a>

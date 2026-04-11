@@ -71,9 +71,9 @@ export default function NetworkGraph({ data, onNodeClick, pulsingNodes }: Networ
       .selectAll("line")
       .data(links)
       .join("line")
-      .attr("stroke", "var(--border-color)")
+      .attr("stroke", "var(--bg-border)")
       .attr("stroke-width", 1)
-      .attr("stroke-opacity", 0.6);
+      .attr("stroke-opacity", 0.4);
 
     // Draw pulse rings for new devices
     const pulseRings = g
@@ -116,8 +116,8 @@ export default function NetworkGraph({ data, onNodeClick, pulsingNodes }: Networ
         return Math.max(8, Math.min(16, 8 + portCount * 1.5));
       })
       .attr("fill", (d) => getRiskColor(d.risk_score))
-      .attr("stroke", "var(--bg-primary)")
-      .attr("stroke-width", 2)
+      .attr("stroke", "var(--bg-deep)")
+      .attr("stroke-width", 2.5)
       .style("cursor", "pointer")
       .on("click", (_, d) => onNodeClick(d));
 
@@ -147,7 +147,8 @@ export default function NetworkGraph({ data, onNodeClick, pulsingNodes }: Networ
       .join("text")
       .text((d) => d.hostname || d.ip)
       .attr("font-size", 10)
-      .attr("fill", "var(--text-secondary)")
+      .attr("font-family", "var(--font-mono)")
+      .attr("fill", "var(--text-ghost)")
       .attr("text-anchor", "middle")
       .attr("dy", (d) => (d.is_router ? 30 : 24))
       .style("pointer-events", "none");
@@ -181,11 +182,22 @@ export default function NetworkGraph({ data, onNodeClick, pulsingNodes }: Networ
   if (!data || data.nodes.length === 0) {
     return (
       <div
-        className="flex items-center justify-center h-96 rounded-lg border"
-        style={{ background: "var(--bg-tertiary)", borderColor: "var(--border-color)" }}
+        className="flex items-center justify-center h-96 rounded-xl"
+        style={{
+          background: "var(--bg-card)",
+          border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+        }}
       >
-        <p style={{ color: "var(--text-muted)" }}>
-          No network data. Click &ldquo;Scan Network&rdquo; to discover devices.
+        <p
+          style={{
+            color: "var(--text-ghost)",
+            fontFamily: "var(--font-mono)",
+            fontSize: "12px",
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+          }}
+        >
+          No network data — run a scan to map the terrain.
         </p>
       </div>
     );
@@ -194,8 +206,12 @@ export default function NetworkGraph({ data, onNodeClick, pulsingNodes }: Networ
   return (
     <div
       ref={containerRef}
-      className="rounded-lg border overflow-hidden"
-      style={{ background: "var(--bg-tertiary)", borderColor: "var(--border-color)", height: "500px" }}
+      className="rounded-xl overflow-hidden"
+      style={{
+        background: "var(--bg-card)",
+        border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+        height: "500px",
+      }}
     >
       <svg ref={svgRef} className="w-full h-full" />
     </div>

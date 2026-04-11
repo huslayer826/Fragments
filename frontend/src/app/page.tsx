@@ -10,7 +10,7 @@ import ScanControls from "./components/ScanControls";
 import TopologyStats from "./components/TopologyStats";
 
 export default function DashboardPage() {
-  const { topology, stats, loading, refresh } = useNetworkData();
+  const { topology, stats, loading, error, refresh } = useNetworkData();
   const { connected, on } = useWebSocket();
   const [selectedDevice, setSelectedDevice] = useState<TopologyNode | null>(null);
   const [newDeviceMacs, setNewDeviceMacs] = useState<Set<string>>(new Set());
@@ -48,18 +48,42 @@ export default function DashboardPage() {
   }, [on, refresh]);
 
   return (
-    <div className="flex h-[calc(100vh-3rem)]">
-      <div className="flex-1 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold">Network Dashboard</h2>
-            <span
-              className="w-2 h-2 rounded-full"
-              title={connected ? "WebSocket connected" : "WebSocket disconnected"}
+    <div className="flex h-[calc(100vh-4rem)] gap-6">
+      <div className="flex-1 flex flex-col gap-6 min-w-0">
+        <div className="flex items-end justify-between">
+          <div>
+            <p
               style={{
-                backgroundColor: connected ? "var(--status-healthy)" : "var(--status-critical)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+                textTransform: "uppercase",
+                letterSpacing: "0.16em",
+                color: "var(--text-ghost)",
+                marginBottom: "6px",
               }}
-            />
+            >
+              Surveillance ▸ Live
+            </p>
+            <div className="flex items-center gap-3">
+              <h2
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontWeight: 700,
+                  fontSize: "32px",
+                  letterSpacing: "-0.02em",
+                  color: "var(--text-primary)",
+                }}
+              >
+                Network Dashboard
+              </h2>
+              <span
+                className="w-2 h-2 rounded-full"
+                title={connected ? "WebSocket connected" : "WebSocket disconnected"}
+                style={{
+                  backgroundColor: connected ? "var(--status-healthy)" : "var(--status-critical)",
+                }}
+              />
+            </div>
           </div>
           <ScanControls
             onScanComplete={refresh}
@@ -68,6 +92,44 @@ export default function DashboardPage() {
         </div>
 
         <TopologyStats stats={stats} loading={loading} />
+
+        {error && (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-xl"
+            style={{
+              background: "color-mix(in srgb, var(--status-critical) 12%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--status-critical) 35%, transparent)",
+            }}
+          >
+            <span style={{ color: "var(--status-critical)", fontSize: "16px" }}>◆</span>
+            <div className="flex-1 min-w-0">
+              <p
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "10px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  color: "var(--status-critical)",
+                }}
+              >
+                Backend unreachable
+              </p>
+              <p
+                className="mt-1"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                {error}
+              </p>
+            </div>
+            <button onClick={refresh} className="frag-btn-secondary">
+              Retry
+            </button>
+          </div>
+        )}
 
         <div className="flex-1">
           <NetworkGraph

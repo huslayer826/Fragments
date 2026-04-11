@@ -26,13 +26,20 @@ export default function CompliancePage() {
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [assessing, setAssessing] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<AssessmentResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   async function loadFrameworks() {
+    setLoading(true);
+    setError(null);
     try {
       const res = await fetch(`${API_BASE}/api/compliance/frameworks`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setFrameworks(await res.json());
-    } catch {
-      // ignore
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load frameworks");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -43,16 +50,18 @@ export default function CompliancePage() {
   async function handleAssess(frameworkId: string) {
     setAssessing(frameworkId);
     setLastResult(null);
+    setError(null);
     try {
       const res = await fetch(`${API_BASE}/api/compliance/assess`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ framework_id: frameworkId }),
       });
+      if (!res.ok) throw new Error(`Assessment failed (${res.status})`);
       const data: AssessmentResult = await res.json();
       setLastResult(data);
-    } catch {
-      // ignore
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Assessment failed");
     } finally {
       setAssessing(null);
     }
@@ -60,19 +69,79 @@ export default function CompliancePage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">Compliance Assessment</h2>
+      <p
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "10px",
+          textTransform: "uppercase",
+          letterSpacing: "0.16em",
+          color: "var(--text-ghost)",
+          marginBottom: "6px",
+        }}
+      >
+        Posture
+      </p>
+      <h2
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontWeight: 700,
+          fontSize: "32px",
+          letterSpacing: "-0.02em",
+          marginBottom: "32px",
+        }}
+      >
+        Compliance Assessment
+      </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
+        <div className="space-y-6">
           <ComplianceUpload onUploadComplete={loadFrameworks} />
 
-          {/* Frameworks list */}
-          <div className="mt-6">
-            <h3 className="text-sm font-bold mb-3" style={{ color: "var(--text-secondary)" }}>
+          <div>
+            <h3
+              className="mb-3"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                color: "var(--text-ghost)",
+              }}
+            >
               Uploaded Frameworks
             </h3>
-            {frameworks.length === 0 ? (
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            {loading ? (
+              <div className="space-y-2">
+                {[0, 1].map((i) => (
+                  <div
+                    key={i}
+                    className="h-16 rounded-xl animate-pulse"
+                    style={{
+                      background: "var(--bg-card)",
+                      border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+                    }}
+                  />
+                ))}
+              </div>
+            ) : error ? (
+              <p
+                style={{
+                  color: "var(--status-critical)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "12px",
+                }}
+              >
+                ◆ {error}
+              </p>
+            ) : frameworks.length === 0 ? (
+              <p
+                style={{
+                  color: "var(--text-ghost)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "12px",
+                }}
+              >
                 No frameworks uploaded yet.
               </p>
             ) : (
@@ -80,22 +149,42 @@ export default function CompliancePage() {
                 {frameworks.map((fw) => (
                   <div
                     key={fw.id}
-                    className="flex items-center justify-between p-3 rounded-lg border"
-                    style={{ background: "var(--bg-surface)", borderColor: "var(--border-color)" }}
+                    className="flex items-center justify-between p-4 rounded-xl"
+                    style={{
+                      background: "var(--bg-card)",
+                      border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+                    }}
                   >
                     <div>
-                      <p className="text-sm font-medium">{fw.name}</p>
-                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                      <p
+                        style={{
+                          fontFamily: "var(--font-sans)",
+                          fontWeight: 600,
+                          fontSize: "13px",
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        {fw.name}
+                      </p>
+                      <p
+                        className="mt-1"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "10px",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.1em",
+                          color: "var(--text-ghost)",
+                        }}
+                      >
                         {fw.controls_count} controls
                       </p>
                     </div>
                     <button
                       onClick={() => handleAssess(fw.id)}
                       disabled={assessing === fw.id}
-                      className="px-3 py-1 rounded text-xs font-medium disabled:opacity-50"
-                      style={{ background: "var(--accent-orange)", color: "#000" }}
+                      className="frag-btn-secondary"
                     >
-                      {assessing === fw.id ? "Assessing..." : "Assess"}
+                      {assessing === fw.id ? "Assessing…" : "Assess"}
                     </button>
                   </div>
                 ))}
@@ -107,42 +196,53 @@ export default function CompliancePage() {
         {/* Assessment results */}
         <div>
           {lastResult && (
-            <div
-              className="rounded-lg border p-4"
-              style={{ background: "var(--bg-tertiary)", borderColor: "var(--border-color)" }}
-            >
-              <h3 className="text-sm font-bold mb-3">Assessment Results</h3>
-              <p className="text-sm mb-2">
-                <strong>{lastResult.framework}</strong> — {lastResult.controls_assessed} controls
+            <div className="frag-card">
+              <h3
+                className="mb-1"
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                Assessment Results
+              </h3>
+              <p
+                className="mb-5"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  color: "var(--text-ghost)",
+                }}
+              >
+                {lastResult.framework} · {lastResult.controls_assessed} controls
               </p>
 
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="text-center p-2 rounded" style={{ background: "var(--bg-surface)" }}>
-                  <p className="text-lg font-bold" style={{ color: "var(--status-healthy)" }}>
-                    {lastResult.compliant}
-                  </p>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Compliant</p>
-                </div>
-                <div className="text-center p-2 rounded" style={{ background: "var(--bg-surface)" }}>
-                  <p className="text-lg font-bold" style={{ color: "var(--status-warning)" }}>
-                    {lastResult.partial}
-                  </p>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Partial</p>
-                </div>
-                <div className="text-center p-2 rounded" style={{ background: "var(--bg-surface)" }}>
-                  <p className="text-lg font-bold" style={{ color: "var(--status-critical)" }}>
-                    {lastResult.non_compliant}
-                  </p>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Non-Compliant</p>
-                </div>
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <ResultTile
+                  label="Compliant"
+                  value={lastResult.compliant}
+                  color="var(--status-healthy)"
+                />
+                <ResultTile
+                  label="Partial"
+                  value={lastResult.partial}
+                  color="var(--status-warning)"
+                />
+                <ResultTile
+                  label="Non-Compliant"
+                  value={lastResult.non_compliant}
+                  color="var(--status-critical)"
+                />
               </div>
 
               <a
                 href={`${API_BASE}/api/compliance/report/${lastResult.assessment_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block px-4 py-2 rounded-lg text-sm font-medium"
-                style={{ background: "var(--accent-orange)", color: "#000" }}
+                className="frag-btn-primary inline-block"
               >
                 Download PDF Report
               </a>
@@ -150,6 +250,42 @@ export default function CompliancePage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ResultTile({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div
+      className="text-center p-4 rounded-lg"
+      style={{
+        background: "var(--black)",
+        border: `1px solid color-mix(in srgb, ${color} 25%, transparent)`,
+      }}
+    >
+      <p
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "26px",
+          fontWeight: 400,
+          color,
+          lineHeight: 1,
+        }}
+      >
+        {value}
+      </p>
+      <p
+        className="mt-2"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "9px",
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          color: "var(--text-ghost)",
+        }}
+      >
+        {label}
+      </p>
     </div>
   );
 }

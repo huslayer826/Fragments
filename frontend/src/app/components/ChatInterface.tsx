@@ -33,10 +33,11 @@ export default function ChatInterface() {
         ...prev,
         { role: "assistant", content: result.response, sources: result.sources },
       ]);
-    } catch {
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Failed to get a response. Please try again." },
+        { role: "assistant", content: `◆ Failed to get a response: ${msg}` },
       ]);
     } finally {
       setLoading(false);
@@ -55,13 +56,30 @@ export default function ChatInterface() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-4 pb-4">
         {messages.length === 0 && (
-          <div className="text-center py-12" style={{ color: "var(--text-muted)" }}>
-            <p className="text-lg mb-2">Fragments AI</p>
+          <div className="text-center py-12" style={{ color: "var(--text-ghost)" }}>
+            <p
+              className="mb-2"
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontStyle: "italic",
+                fontSize: "24px",
+                color: "var(--text-primary)",
+              }}
+            >
+              Fragments AI
+            </p>
             <p className="text-sm">Ask questions about your network security posture.</p>
-            <div className="mt-4 space-y-2 text-sm" style={{ color: "var(--text-secondary)" }}>
-              <p>&ldquo;What&rsquo;s the biggest risk on my network?&rdquo;</p>
-              <p>&ldquo;Which devices have critical vulnerabilities?&rdquo;</p>
-              <p>&ldquo;Show me all IoT devices&rdquo;</p>
+            <div
+              className="mt-6 inline-flex flex-col gap-2 items-start text-left"
+              style={{
+                color: "var(--text-secondary)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "12px",
+              }}
+            >
+              <p>&gt; What&rsquo;s the biggest risk on my network?</p>
+              <p>&gt; Which devices have critical vulnerabilities?</p>
+              <p>&gt; Show me all IoT devices</p>
             </div>
           </div>
         )}
@@ -72,22 +90,50 @@ export default function ChatInterface() {
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className="max-w-[80%] rounded-lg px-4 py-3"
+              className="max-w-[80%] rounded-xl px-4 py-3"
               style={{
-                background: msg.role === "user" ? "var(--accent-orange)" : "var(--bg-surface)",
-                color: msg.role === "user" ? "#000" : "var(--text-primary)",
+                background: msg.role === "user" ? "var(--orange)" : "var(--bg-card)",
+                color: msg.role === "user" ? "var(--white)" : "var(--text-primary)",
+                border: msg.role === "user"
+                  ? "none"
+                  : "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
               }}
             >
               <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
               {msg.sources && msg.sources.length > 0 && (
-                <div className="mt-2 pt-2 border-t" style={{ borderColor: "var(--border-color)" }}>
-                  <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Sources:</p>
+                <div
+                  className="mt-3 pt-2 border-t"
+                  style={{
+                    borderColor: msg.role === "user"
+                      ? "color-mix(in srgb, var(--white) 30%, transparent)"
+                      : "color-mix(in srgb, var(--bg-border) 40%, transparent)",
+                  }}
+                >
+                  <p
+                    className="mb-1.5"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "10px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.1em",
+                      color: msg.role === "user" ? "var(--white)" : "var(--text-ghost)",
+                      opacity: msg.role === "user" ? 0.7 : 1,
+                    }}
+                  >
+                    Sources
+                  </p>
                   <div className="flex flex-wrap gap-1">
                     {msg.sources.map((src, j) => (
                       <span
                         key={j}
-                        className="text-xs px-2 py-0.5 rounded font-mono"
-                        style={{ background: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
+                        className="px-2 py-0.5 rounded-md"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "10px",
+                          background: "var(--black)",
+                          color: "var(--text-secondary)",
+                          border: "1px solid color-mix(in srgb, var(--bg-border) 40%, transparent)",
+                        }}
                       >
                         {src}
                       </span>
@@ -102,10 +148,16 @@ export default function ChatInterface() {
         {loading && (
           <div className="flex justify-start">
             <div
-              className="rounded-lg px-4 py-3 text-sm"
-              style={{ background: "var(--bg-surface)", color: "var(--text-muted)" }}
+              className="rounded-xl px-4 py-3"
+              style={{
+                background: "var(--bg-card)",
+                color: "var(--text-ghost)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "12px",
+                border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+              }}
             >
-              Analyzing...
+              analyzing…
             </div>
           </div>
         )}
@@ -115,28 +167,24 @@ export default function ChatInterface() {
 
       {/* Input */}
       <div
-        className="border-t pt-4 flex gap-2"
-        style={{ borderColor: "var(--border-color)" }}
+        className="pt-4 flex gap-2"
+        style={{
+          borderTop: "1px solid color-mix(in srgb, var(--bg-border) 40%, transparent)",
+        }}
       >
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about your network..."
+          placeholder="Ask about your network…"
           disabled={loading}
-          className="flex-1 px-4 py-2 rounded-lg border text-sm"
-          style={{
-            background: "var(--bg-tertiary)",
-            borderColor: "var(--border-color)",
-            color: "var(--text-primary)",
-          }}
+          className="frag-input flex-1"
         />
         <button
           onClick={handleSend}
           disabled={loading || !input.trim()}
-          className="px-4 py-2 rounded-lg font-medium text-sm disabled:opacity-50"
-          style={{ background: "var(--accent-orange)", color: "#000" }}
+          className="frag-btn-primary"
         >
           Send
         </button>

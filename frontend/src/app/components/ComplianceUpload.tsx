@@ -54,23 +54,27 @@ export default function ComplianceUpload({ onUploadComplete }: ComplianceUploadP
   }
 
   return (
-    <div
-      className="rounded-lg border p-4"
-      style={{ background: "var(--bg-tertiary)", borderColor: "var(--border-color)" }}
-    >
-      <h3 className="text-sm font-bold mb-3">Upload Compliance Framework</h3>
+    <div className="frag-card">
+      <h3
+        className="mb-4"
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontWeight: 600,
+          fontSize: "14px",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          color: "var(--text-primary)",
+        }}
+      >
+        Upload Compliance Framework
+      </h3>
 
       <input
         type="text"
         placeholder="Framework name (e.g., CIS Controls v8)"
         value={frameworkName}
         onChange={(e) => setFrameworkName(e.target.value)}
-        className="w-full px-3 py-2 rounded-lg border text-sm mb-3"
-        style={{
-          background: "var(--bg-surface)",
-          borderColor: "var(--border-color)",
-          color: "var(--text-primary)",
-        }}
+        className="frag-input w-full mb-3"
       />
 
       <textarea
@@ -78,25 +82,27 @@ export default function ComplianceUpload({ onUploadComplete }: ComplianceUploadP
         value={fileContent}
         onChange={(e) => setFileContent(e.target.value)}
         rows={6}
-        className="w-full px-3 py-2 rounded-lg border text-sm font-mono mb-3"
-        style={{
-          background: "var(--bg-surface)",
-          borderColor: "var(--border-color)",
-          color: "var(--text-primary)",
-        }}
+        className="frag-input w-full mb-4"
+        style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }}
       />
 
       <button
         onClick={handleUpload}
         disabled={uploading || !frameworkName.trim() || !fileContent.trim()}
-        className="px-4 py-2 rounded-lg font-medium text-sm disabled:opacity-50"
-        style={{ background: "var(--accent-orange)", color: "#000" }}
+        className="frag-btn-primary"
       >
-        {uploading ? "Uploading..." : "Upload Framework"}
+        {uploading ? "Uploading…" : "Upload Framework"}
       </button>
 
       {result && (
-        <p className="mt-3 text-sm" style={{ color: "var(--text-secondary)" }}>
+        <p
+          className="mt-4"
+          style={{
+            color: "var(--text-secondary)",
+            fontFamily: "var(--font-mono)",
+            fontSize: "12px",
+          }}
+        >
           {result}
         </p>
       )}
