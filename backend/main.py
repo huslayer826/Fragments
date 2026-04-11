@@ -11,7 +11,7 @@ from typing import Any, AsyncGenerator
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.config import BIND_HOST, SCAN_SUBNET, SCAN_INTERVAL
+from backend.config import BIND_HOST, SCAN_SUBNET, SCAN_INTERVAL, DATA_DIR
 from backend.database import (
     init_db,
     insert_device,
@@ -398,6 +398,46 @@ async def compliance_report_download(assessment_id: int):
         media_type="application/pdf",
         filename=os.path.basename(assessment["report_path"]),
     )
+
+
+# --- Security Report ---
+
+@app.post("/api/report")
+async def generate_report() -> dict[str, Any]:
+    """Generate a full security assessment PDF report."""
+    from backend.report import generate_security_report
+
+    filepath = await generate_security_report()
+    filename = os.path.basename(filepath)
+    return {"report_url": f"/api/report/download/{filename}", "filepath": filepath}
+
+
+@app.get("/api/report/download/{filename}")
+async def download_report(filename: str):
+    """Download a generated security report."""
+    from fastapi.responses import FileResponse
+
+    filepath = str(DATA_DIR / "reports" / filename)
+    if not os.path.exists(filepath):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    return FileResponse(filepath, media_type="application/pdf", filename=filename)
+
+
+# --- Attack Simulation ---
+
+@app.post("/api/ai/attack-sim")
+async def attack_simulation(body: dict[str, Any]) -> dict[str, Any]:
+    """Simulate lateral movement from a compromised device."""
+    from backend.ai.attack_sim import simulate_attack
+
+    device_id = body.get("device_id", "")
+    if not device_id:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="device_id is required")
+
+    return await simulate_attack(device_id)
 
 
 # --- Background Scanner ---
