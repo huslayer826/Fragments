@@ -51,6 +51,23 @@ CREATE TABLE IF NOT EXISTS scans (
     snapshot TEXT DEFAULT '[]'
 );
 
+CREATE TABLE IF NOT EXISTS compliance_frameworks (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    version TEXT DEFAULT '',
+    controls TEXT DEFAULT '[]',
+    upload_date TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS compliance_assessments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    framework_id TEXT NOT NULL,
+    assessed_at TEXT NOT NULL,
+    results TEXT DEFAULT '[]',
+    report_path TEXT DEFAULT '',
+    FOREIGN KEY (framework_id) REFERENCES compliance_frameworks(id)
+);
+
 CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER PRIMARY KEY
 );
@@ -228,6 +245,68 @@ def trust_device(mac: str) -> bool:
         (mac,),
     )
     return len(rows) > 0
+
+
+def insert_framework(framework: dict[str, Any]) -> str:
+    """Insert a compliance framework. Returns its ID."""
+    execute(
+        """INSERT OR REPLACE INTO compliance_frameworks (id, name, version, controls, upload_date)
+           VALUES (?, ?, ?, ?, ?)""",
+        (
+            framework["id"],
+            framework["name"],
+            framework.get("version", ""),
+            json.dumps(framework.get("controls", [])),
+            framework["upload_date"],
+        ),
+    )
+    return framework["id"]
+
+
+def get_frameworks() -> list[dict[str, Any]]:
+    """Return all compliance frameworks."""
+    rows = execute("SELECT * FROM compliance_frameworks ORDER BY upload_date DESC")
+    results = []
+    for r in rows:
+        d = dict(r)
+        d["controls"] = json.loads(d["controls"]) if isinstance(d["controls"], str) else d["controls"]
+        results.append(d)
+    return results
+
+
+def get_framework(framework_id: str) -> dict[str, Any] | None:
+    """Return a single framework by ID."""
+    rows = execute("SELECT * FROM compliance_frameworks WHERE id = ?", (framework_id,))
+    if rows:
+        d = dict(rows[0])
+        d["controls"] = json.loads(d["controls"]) if isinstance(d["controls"], str) else d["controls"]
+        return d
+    return None
+
+
+def insert_assessment(assessment: dict[str, Any]) -> int:
+    """Insert a compliance assessment and return its ID."""
+    rows = execute(
+        """INSERT INTO compliance_assessments (framework_id, assessed_at, results, report_path)
+           VALUES (?, ?, ?, ?) RETURNING id""",
+        (
+            assessment["framework_id"],
+            assessment["assessed_at"],
+            json.dumps(assessment.get("results", [])),
+            assessment.get("report_path", ""),
+        ),
+    )
+    return rows[0]["id"]
+
+
+def get_assessment(assessment_id: int) -> dict[str, Any] | None:
+    """Return a single assessment by ID."""
+    rows = execute("SELECT * FROM compliance_assessments WHERE id = ?", (assessment_id,))
+    if rows:
+        d = dict(rows[0])
+        d["results"] = json.loads(d["results"]) if isinstance(d["results"], str) else d["results"]
+        return d
+    return None
 
 
 def _row_to_device(row: sqlite3.Row) -> dict[str, Any]:

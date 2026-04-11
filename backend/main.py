@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any, AsyncGenerator
@@ -22,6 +23,11 @@ from backend.database import (
     acknowledge_alert,
     trust_device,
     insert_alert,
+    insert_framework,
+    get_frameworks,
+    get_framework,
+    insert_assessment,
+    get_assessment,
 )
 from backend.websocket import manager
 
@@ -263,6 +269,135 @@ async def rag_ingest() -> dict[str, Any]:
     alerts = get_alerts()
     count = ingest_scan_data(devices, alerts)
     return {"status": "complete", "documents_ingested": count}
+
+
+# --- Compliance ---
+
+@app.post("/api/compliance/upload")
+async def compliance_upload(body: dict[str, Any]) -> dict[str, Any]:
+    """Accept compliance document content (JSON), parse, and store framework."""
+    from backend.compliance.parser import parse_compliance_document
+    import uuid
+
+    content = body.get("content")
+    filename = body.get("filename", "document.json")
+    framework_name = body.get("framework_name", "Unknown Framework")
+
+    if not content:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Content is required")
+
+    # Parse content based on type
+    if isinstance(content, list):
+        controls = content
+    elif isinstance(content, str):
+        controls = parse_compliance_document(
+            content=content.encode("utf-8"),
+            filename=filename,
+        )
+    else:
+        controls = parse_compliance_document(
+            content=json.dumps(content).encode("utf-8"),
+            filename="document.json",
+        )
+
+    framework_id = str(uuid.uuid4())[:8]
+    insert_framework({
+        "id": framework_id,
+        "name": framework_name,
+        "controls": controls,
+        "upload_date": datetime.now(timezone.utc).isoformat(),
+    })
+
+    # Ingest controls into ChromaDB for RAG-based assessment
+    try:
+        from backend.ai.rag.ingestion import ingest_scan_data
+        control_docs = [{
+            "mac": f"control-{c.get('control_id', i)}",
+            "ip": "N/A",
+            "hostname": c.get("title", ""),
+            "vendor": framework_name,
+            "os": "",
+            "device_type": "compliance_control",
+            "open_ports": {},
+            "services": {},
+            "risk_score": 0,
+            "cves": [],
+            "first_seen": "",
+            "last_seen": "",
+        } for i, c in enumerate(controls)]
+        # Don't ingest as devices, just store in framework
+    except Exception:
+        pass
+
+    return {
+        "framework_id": framework_id,
+        "name": framework_name,
+        "controls_parsed": len(controls),
+    }
+
+
+@app.get("/api/compliance/frameworks")
+async def list_frameworks() -> list[dict[str, Any]]:
+    """List ingested compliance frameworks."""
+    frameworks = get_frameworks()
+    return [{"id": f["id"], "name": f["name"], "version": f.get("version", ""),
+             "controls_count": len(f.get("controls", [])), "upload_date": f["upload_date"]}
+            for f in frameworks]
+
+
+@app.post("/api/compliance/assess")
+async def compliance_assess(body: dict[str, Any]) -> dict[str, Any]:
+    """Run compliance assessment against a framework."""
+    from backend.compliance.assessor import assess_framework
+    from backend.compliance.report_generator import generate_compliance_report
+
+    framework_id = body.get("framework_id", "")
+    framework = get_framework(framework_id)
+    if not framework:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Framework not found")
+
+    controls = framework.get("controls", [])
+    assessments = await assess_framework(controls)
+
+    # Generate PDF report
+    report_path = generate_compliance_report(framework["name"], assessments)
+
+    # Store assessment
+    assessment_id = insert_assessment({
+        "framework_id": framework_id,
+        "assessed_at": datetime.now(timezone.utc).isoformat(),
+        "results": assessments,
+        "report_path": report_path,
+    })
+
+    return {
+        "assessment_id": assessment_id,
+        "framework": framework["name"],
+        "controls_assessed": len(assessments),
+        "compliant": sum(1 for a in assessments if a["verdict"] == "Compliant"),
+        "partial": sum(1 for a in assessments if a["verdict"] == "Partial"),
+        "non_compliant": sum(1 for a in assessments if a["verdict"] == "Non-Compliant"),
+        "report_path": report_path,
+    }
+
+
+@app.get("/api/compliance/report/{assessment_id}")
+async def compliance_report_download(assessment_id: int):
+    """Download a generated compliance report PDF."""
+    from fastapi.responses import FileResponse
+
+    assessment = get_assessment(assessment_id)
+    if not assessment or not assessment.get("report_path"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    return FileResponse(
+        assessment["report_path"],
+        media_type="application/pdf",
+        filename=os.path.basename(assessment["report_path"]),
+    )
 
 
 # --- Background Scanner ---
