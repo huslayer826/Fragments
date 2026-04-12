@@ -2,7 +2,7 @@
 
 **AI-powered network security platform** — discover devices on your LAN, score their risk, simulate lateral movement, chat with a RAG analyst about your scan, assess compliance frameworks, and export PDF reports.
 
-Built for the HackTheBay hackathon. Runs fully offline in mock mode for demos.
+An AI-powered network security tool. Runs fully offline in mock mode for demos.
 
 ---
 
