@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 .material-symbols-outlined {
@@ -45,16 +45,16 @@
   --text-secondary: #9EA4AE;
   --text-ghost: #5C636E;
 
-  /* Status / risk */
-  --status-healthy: #D65A31;
+  /* Status / risk — kept distinct from the brand orange so risk reads at a glance */
+  --status-healthy: #4FB286;
   --status-warning: #E8A84C;
-  --status-critical: #D63A3A;
+  --status-high: #EF5A4C;
+  --status-critical: #E5408A;
   --status-info: #5A8FD6;
 
   /* Fonts */
   --font-sans: 'Sora', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-  --font-serif: 'Instrument Serif', serif;
 
   /* ----------------------------------------------------------
      Legacy aliases (mapped to Fragments tokens) — kept so
@@ -102,12 +102,12 @@
 
   --color-status-healthy: var(--status-healthy);
   --color-status-warning: var(--status-warning);
+  --color-status-high: var(--status-high);
   --color-status-critical: var(--status-critical);
   --color-status-info: var(--status-info);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
-  --font-serif: var(--font-serif);
 }
 
 html, body {
@@ -476,4 +476,34 @@ h1, h2, h3, h4, h5, h6 {
 }
 .nav-item .material-symbols-outlined {
   font-size: 20px;
+}
+
+/* Page header */
+.page-title {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.page-subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 760px;
+}
+
+/* Network graph */
+@keyframes attack-dash {
+  to { stroke-dashoffset: -20; }
+}
+.attack-dash {
+  animation: attack-dash 1s linear infinite;
+}
+@keyframes node-halo {
+  0%, 100% { opacity: 0.12; }
+  50% { opacity: 0.3; }
+}
+.node-halo {
+  animation: node-halo 2.4s ease-in-out infinite;
 }

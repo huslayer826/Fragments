@@ -73,9 +73,8 @@ export default function ChatInterface() {
             <p
               className="mb-1"
               style={{
-                fontFamily: "var(--font-serif)",
-                fontStyle: "italic",
-                fontSize: "32px",
+                fontWeight: 600,
+                fontSize: "20px",
                 color: "var(--text-primary)",
               }}
             >

@@ -5,9 +5,19 @@ import { api, type Alert } from "@/lib/api";
 
 const SEVERITY_COLORS: Record<string, string> = {
   critical: "var(--status-critical)",
-  high: "var(--orange-light)",
+  high: "var(--status-high)",
   medium: "var(--status-warning)",
   low: "var(--status-healthy)",
+};
+
+const SEVERITY_RANK = ["critical", "high", "medium", "low"];
+
+const ALERT_TYPES: Record<string, string> = {
+  rogue_device: "Rogue device",
+  known_vulnerability: "Known vulnerability",
+  insecure_service: "Insecure service",
+  new_device: "New device",
+  port_change: "Port change",
 };
 
 export default function ThreatFeed() {
@@ -40,7 +50,9 @@ export default function ThreatFeed() {
     );
   }
 
-  const filtered = filter ? alerts.filter((a) => a.severity === filter) : alerts;
+  const filtered = (filter ? alerts.filter((a) => a.severity === filter) : alerts)
+    .slice()
+    .sort((a, b) => SEVERITY_RANK.indexOf(a.severity) - SEVERITY_RANK.indexOf(b.severity));
 
   return (
     <div>
@@ -68,6 +80,9 @@ export default function ThreatFeed() {
               }}
             >
               {s || "All"}
+              <span style={{ marginLeft: 6, opacity: 0.6 }}>
+                {s ? alerts.filter((a) => a.severity === s).length : alerts.length}
+              </span>
             </button>
           );
         })}
@@ -174,7 +189,7 @@ export default function ThreatFeed() {
                         color: "var(--text-ghost)",
                       }}
                     >
-                      {alert.alert_type}
+                      {ALERT_TYPES[alert.alert_type] ?? alert.alert_type.replace(/_/g, " ")}
                     </span>
                   </div>
                   <p className="text-sm" style={{ color: "var(--text-primary)" }}>
