@@ -11,7 +11,7 @@ from typing import Any, AsyncGenerator
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.config import BIND_HOST, SCAN_SUBNET, SCAN_INTERVAL, DATA_DIR
+from backend.config import FRAGMENTS_MOCK, BIND_HOST, SCAN_SUBNET, SCAN_INTERVAL, DATA_DIR
 from backend.database import (
     init_db,
     insert_device,
@@ -43,6 +43,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     global _background_scanner_task
     init_db()
     logger.info("Fragments backend started")
+    if FRAGMENTS_MOCK:
+        await _seed_demo_data()
     _background_scanner_task = asyncio.create_task(_background_scan_loop())
     yield
     if _background_scanner_task:
@@ -59,7 +61,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=os.environ.get(
+        "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+    ).split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -71,7 +75,7 @@ app.add_middleware(
 @app.get("/health")
 async def health() -> dict[str, str]:
     """Health check endpoint."""
-    return {"status": "ok", "service": "fragments"}
+    return {"status": "ok", "service": "fragments", "mode": "demo" if FRAGMENTS_MOCK else "live"}
 
 
 # --- Scanning ---
@@ -84,32 +88,26 @@ async def trigger_scan() -> dict[str, Any]:
     started = datetime.now(timezone.utc).isoformat()
     devices = await run_scan()
 
-    # Store devices and detect rogue devices
+    # Store devices and raise alerts for anything risky
+    open_alerts = {
+        (a["alert_type"], a["device_mac"])
+        for a in get_alerts()
+        if not a.get("acknowledged")
+    }
     alerts_generated = 0
     for device in devices:
         insert_device(device.to_dict())
-
-        # Rogue device detection: untrusted devices generate alerts
-        if not device.is_trusted:
-            existing = get_device(device.mac)
-            is_newly_untrusted = existing is None or not existing.get("is_trusted", False)
-            if is_newly_untrusted:
-                now = datetime.now(timezone.utc).isoformat()
-                alert_id = insert_alert({
-                    "timestamp": now,
-                    "alert_type": "rogue_device",
-                    "severity": "high",
-                    "device_mac": device.mac,
-                    "message": f"Rogue device detected: {device.ip} ({device.vendor or 'Unknown vendor'}) — MAC {device.mac}",
-                })
-                alerts_generated += 1
-                await manager.broadcast("alert", {
-                    "id": alert_id,
-                    "alert_type": "rogue_device",
-                    "severity": "high",
-                    "device_mac": device.mac,
-                    "message": f"Rogue device detected: {device.ip}",
-                })
+        for alert in _alerts_for_device(device):
+            if (alert["alert_type"], device.mac) in open_alerts:
+                continue
+            alert_id = insert_alert({
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "device_mac": device.mac,
+                **alert,
+            })
+            open_alerts.add((alert["alert_type"], device.mac))
+            alerts_generated += 1
+            await manager.broadcast("alert", {"id": alert_id, "device_mac": device.mac, **alert})
 
     # Store scan record
     completed = datetime.now(timezone.utc).isoformat()
@@ -145,6 +143,49 @@ async def trigger_scan() -> dict[str, Any]:
         "status": "complete",
         "devices_found": len(devices),
     }
+
+
+async def _seed_demo_data() -> None:
+    """Populate an empty demo database so every page has something to show."""
+    if not get_all_devices():
+        await trigger_scan()
+    if not get_frameworks():
+        fixture = os.path.join(os.path.dirname(__file__), "tests", "fixtures", "mock_compliance.json")
+        with open(fixture) as f:
+            await compliance_upload({"content": json.load(f), "framework_name": "CIS Controls v8"})
+
+
+INSECURE_SERVICES = {"telnet", "ftp", "tftp", "rlogin", "rsh", "rexec"}
+
+
+def _alerts_for_device(device: Any) -> list[dict[str, str]]:
+    """Return the alerts a scanned device should raise."""
+    label = f"{device.hostname} ({device.ip})" if device.hostname else device.ip
+    alerts: list[dict[str, str]] = []
+    if not device.is_trusted:
+        alerts.append({
+            "alert_type": "rogue_device",
+            "severity": "high",
+            "message": f"Rogue device detected: {device.ip} ({device.vendor or 'Unknown vendor'}) — MAC {device.mac}",
+        })
+    if device.cves:
+        alerts.append({
+            "alert_type": "known_vulnerability",
+            "severity": "critical" if device.risk_score >= 50 else "high",
+            "message": f"{label} is exposed to {', '.join(device.cves)}",
+        })
+    insecure = sorted(
+        f"{svc} :{port}"
+        for port, svc in device.open_ports.items()
+        if str(svc).lower() in INSECURE_SERVICES
+    )
+    if insecure:
+        alerts.append({
+            "alert_type": "insecure_service",
+            "severity": "medium",
+            "message": f"{label} exposes unencrypted services: {', '.join(insecure)}",
+        })
+    return alerts
 
 
 # --- Devices ---

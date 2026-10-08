@@ -118,11 +118,17 @@ def _mock_response(
             devices_info.append(meta)
 
     if "risk" in question_lower or "dangerous" in question_lower or "vulnerable" in question_lower:
-        lines.append("Based on the current scan data, here are the highest-risk devices:\n")
-        for d in sorted(devices_info, key=lambda x: x.get("risk_score", 0), reverse=True)[:5]:
-            lines.append(f"- **{d.get('ip', '?')}** (MAC: {d.get('mac', '?')}) — "
-                        f"Risk: {d.get('risk_score', 0)}/100 ({d.get('risk_tier', '?')}), "
-                        f"Type: {d.get('device_type', '?')}")
+        # Rank the whole inventory, not just the retrieved chunks
+        from backend.database import get_all_devices
+        ranked = sorted(get_all_devices(), key=lambda x: x.get("risk_score", 0), reverse=True)[:5]
+        lines.append("These are the highest-risk devices in the latest scan:\n")
+        for d in ranked:
+            ip = d.get("ip", "?")
+            name = f"**{d['hostname']}** ({ip})" if d.get("hostname") else f"**{ip}**"
+            cves = d.get("cves") or []
+            detail = f", {len(cves)} known CVE{'s' if len(cves) != 1 else ''}" if cves else ""
+            lines.append(f"- {name} — risk {d.get('risk_score', 0):.0f}/100, "
+                         f"{d.get('device_type', 'unknown')}{detail}")
     elif "device" in question_lower or "network" in question_lower:
         lines.append(f"The network scan found **{len(devices_info)} devices**:\n")
         for d in devices_info[:8]:

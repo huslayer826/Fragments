@@ -145,27 +145,23 @@ def _generate_narration(
             f"no viable lateral movement paths were found. This device is relatively isolated."
         )
 
-    lines: list[str] = []
-    lines.append(
-        f"**Attack Origin:** {source['ip']} ({source.get('hostname', 'unknown')}) — "
-        f"{source.get('vendor', 'Unknown vendor')}, Risk: {source.get('risk_score', 0)}/100"
-    )
-    lines.append("")
+    def _name(ip: str, host: str | None) -> str:
+        return f"{host} ({ip})" if host else ip
 
-    for i, step in enumerate(steps, 1):
-        lines.append(
-            f"**Step {i}:** Move from {step['from_ip']} ({step['from_host'] or '?'}) "
-            f"→ {step['to_ip']} ({step['to_host'] or '?'})"
-        )
-        lines.append(f"  Method: {step['method']}")
-        lines.append(f"  Target Risk: {step['risk']}/100")
-        lines.append("")
-
+    lines: list[str] = [
+        f"**Origin:** {_name(source['ip'], source.get('hostname'))} — "
+        f"{source.get('vendor') or 'Unknown vendor'}, risk {source.get('risk_score', 0):.0f}/100",
+        "",
+    ]
     final = path[-1]
-    lines.append(
-        f"**Impact:** Attacker reaches **{final['ip']}** ({final.get('hostname', 'unknown')}) "
-        f"— a {final.get('device_type', 'unknown')} device with risk score {final.get('risk_score', 0)}/100. "
-        f"Total chain: {len(steps)} hop(s) across {len(path)} devices."
-    )
+    first = steps[0]
+    lines += [
+        f"**Impact:** the attacker reaches {_name(final['ip'], final.get('hostname'))}, "
+        f"a {final.get('device_type', 'unknown')} device, after {len(steps)} hop(s) "
+        f"across {len(path)} devices.",
+        "",
+        f"**Break the chain:** blocking {first['method']} into "
+        f"{_name(first['to_ip'], first['to_host'])} stops this path at the first hop.",
+    ]
 
     return "\n".join(lines)
