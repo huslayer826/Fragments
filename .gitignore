@@ -30,3 +30,6 @@ frontend/out/
 # OS
 .DS_Store
 Thumbs.db
+
+# Stray Next.js build output at the repo root
+.next/
