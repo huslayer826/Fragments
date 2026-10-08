@@ -80,7 +80,7 @@ async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  health: () => fetchApi<{ status: string }>("/health"),
+  health: () => fetchApi<{ status: string; mode?: string }>("/health"),
 
   // Scanning
   triggerScan: () => fetchApi<ScanResult>("/api/scan", { method: "POST" }),

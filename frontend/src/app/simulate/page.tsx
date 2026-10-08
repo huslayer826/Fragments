@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { api, type Device } from "@/lib/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { api, type Device, type TopologyData } from "@/lib/api";
+import NetworkGraph from "../components/NetworkGraph";
+import PageHeader from "../components/PageHeader";
+import { getRiskColor } from "../components/RiskScoreBadge";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -23,15 +28,21 @@ interface SimResult {
 
 export default function SimulatePage() {
   const [devices, setDevices] = useState<Device[]>([]);
+  const [topology, setTopology] = useState<TopologyData | null>(null);
   const [selectedMac, setSelectedMac] = useState("");
   const [simulating, setSimulating] = useState(false);
   const [result, setResult] = useState<SimResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api
-      .getDevices()
-      .then(setDevices)
+    Promise.all([api.getDevices(), api.getTopology()])
+      .then(([d, t]) => {
+        const sorted = [...d].sort((a, b) => b.risk_score - a.risk_score);
+        setDevices(sorted);
+        setTopology(t);
+        // Start from the riskiest device — the most likely foothold
+        if (sorted.length) setSelectedMac(sorted[0].mac);
+      })
       .catch((e: Error) => setError(e.message || "Failed to load devices"));
   }, []);
 
@@ -59,178 +70,147 @@ export default function SimulatePage() {
 
   return (
     <div>
-      <p
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "10px",
-          textTransform: "uppercase",
-          letterSpacing: "0.16em",
-          color: "var(--text-ghost)",
-          marginBottom: "6px",
-        }}
-      >
-        Lateral Movement
-      </p>
-      <h2
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontWeight: 700,
-          fontSize: "32px",
-          letterSpacing: "-0.02em",
-        }}
-      >
-        Attack Path Simulation
-      </h2>
-      <p
-        className="mt-2 mb-8"
-        style={{
-          fontFamily: "var(--font-serif)",
-          fontStyle: "italic",
-          fontSize: "16px",
-          color: "var(--text-secondary)",
-        }}
-      >
-        Select a device to simulate lateral movement from a compromised host.
-      </p>
+      <PageHeader
+        title="Attack simulation"
+        subtitle="Pick a compromised device and see how an attacker could move laterally through the network."
+      />
 
       <div className="flex gap-3 mb-6">
         <select
           value={selectedMac}
-          onChange={(e) => setSelectedMac(e.target.value)}
+          onChange={(e) => {
+            setSelectedMac(e.target.value);
+            setResult(null);
+          }}
           className="frag-input flex-1"
         >
-          <option value="">Select a device…</option>
           {devices.map((d) => (
             <option key={d.mac} value={d.mac}>
-              {d.ip} — {d.hostname || d.vendor || "Unknown"} (Risk: {d.risk_score})
+              {d.hostname || d.vendor || "Unknown"} · {d.ip} · risk {Math.round(d.risk_score)}
             </option>
           ))}
         </select>
         <button
           onClick={handleSimulate}
           disabled={!selectedMac || simulating}
-          className="frag-btn-primary"
+          className="frag-btn-primary flex items-center gap-2"
         >
-          {simulating ? "Simulating…" : "Simulate Compromise"}
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+            bolt
+          </span>
+          {simulating ? "Simulating…" : "Simulate compromise"}
         </button>
       </div>
 
       {error && (
-        <div
-          className="mb-4 px-4 py-3 rounded-xl"
-          style={{
-            background: "color-mix(in srgb, var(--status-critical) 12%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--status-critical) 35%, transparent)",
-            color: "var(--status-critical)",
-            fontFamily: "var(--font-mono)",
-            fontSize: "12px",
-          }}
-        >
-          ◆ {error}
-        </div>
+        <p className="mb-4 text-sm" style={{ color: "var(--status-critical)" }}>
+          {error}
+        </p>
       )}
 
-      {result && (
-        <div className="space-y-4">
-          {/* Attack path visualization */}
-          {result.steps.length > 0 && (
-            <div className="frag-card">
-              <h3
-                className="mb-4"
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 600,
-                  fontSize: "13px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                Attack Path · {result.steps.length} hops
-              </h3>
-              <div className="space-y-3">
+      <div className="flex gap-6" style={{ height: "max(560px, calc(100vh - 250px))" }}>
+        <div className="flex-1 min-w-0">
+          <NetworkGraph data={topology} selectedId={selectedMac} path={result?.path} />
+        </div>
+
+        {result && (
+          <aside
+            className="w-96 flex-shrink-0 overflow-y-auto rounded-xl p-5"
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)",
+            }}
+          >
+            <p className="frag-label mb-4">
+              {result.steps.length} hop{result.steps.length === 1 ? "" : "s"}
+            </p>
+
+            {result.steps.length === 0 ? (
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                No lateral movement paths found. This device is isolated.
+              </p>
+            ) : (
+              <ol className="relative">
+                <Hop index={0} host={result.steps[0].from_host} ip={result.steps[0].from_ip} label="Foothold" />
                 {result.steps.map((step, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div
-                      className="px-3 py-2 rounded-md"
-                      style={{
-                        background: "var(--black)",
-                        color: "var(--text-primary)",
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "12px",
-                        border: "1px solid color-mix(in srgb, var(--bg-border) 40%, transparent)",
-                      }}
-                    >
-                      {step.from_ip}
-                    </div>
-                    <div className="flex flex-col items-center min-w-0 flex-1">
-                      <span style={{ color: "var(--status-critical)", fontSize: "20px", lineHeight: 1 }}>→</span>
-                      <span
-                        className="truncate max-w-full"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "10px",
-                          color: "var(--text-ghost)",
-                          marginTop: "2px",
-                        }}
-                      >
-                        {step.method}
-                      </span>
-                    </div>
-                    <div
-                      className="px-3 py-2 rounded-md"
-                      style={{
-                        background: "var(--black)",
-                        color: "var(--status-critical)",
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "12px",
-                        border: "1px solid color-mix(in srgb, var(--status-critical) 30%, transparent)",
-                      }}
-                    >
-                      {step.to_ip}
-                    </div>
-                    <span
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "10px",
-                        color: "var(--text-ghost)",
-                      }}
-                    >
-                      Risk {step.risk}
-                    </span>
-                  </div>
+                  <Hop
+                    key={i}
+                    index={i + 1}
+                    host={step.to_host}
+                    ip={step.to_ip}
+                    label={step.method}
+                    risk={step.risk}
+                    last={i === result.steps.length - 1}
+                  />
                 ))}
-              </div>
-            </div>
-          )}
+              </ol>
+            )}
 
-          {/* Narration */}
-          <div className="frag-card">
-            <h3
-              className="mb-4"
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 600,
-                fontSize: "13px",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-              }}
-            >
-              Attack Narration
-            </h3>
             <div
-              className="whitespace-pre-wrap"
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: "13px",
-                lineHeight: 1.7,
-                color: "var(--text-secondary)",
-              }}
+              className="frag-md mt-5 pt-5 text-[13px]"
+              style={{ borderTop: "1px solid color-mix(in srgb, var(--bg-border) 30%, transparent)" }}
             >
-              {result.narration}
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.narration}</ReactMarkdown>
             </div>
-          </div>
-        </div>
-      )}
+          </aside>
+        )}
+      </div>
     </div>
+  );
+}
+
+function Hop({
+  index,
+  host,
+  ip,
+  label,
+  risk,
+  last,
+}: {
+  index: number;
+  host: string;
+  ip: string;
+  label: string;
+  risk?: number;
+  last?: boolean;
+}) {
+  return (
+    <li className="relative flex gap-3 pb-4">
+      {!last && (
+        <span
+          className="absolute left-[11px] top-6 bottom-0 w-px"
+          style={{ background: "color-mix(in srgb, var(--status-critical) 40%, transparent)" }}
+        />
+      )}
+      <span
+        className="relative flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center"
+        style={{
+          background: index === 0 ? "var(--bg-elevated)" : "var(--status-critical)",
+          border: index === 0 ? "1px solid var(--status-critical)" : "none",
+          fontFamily: "var(--font-mono)",
+          fontSize: "10px",
+          fontWeight: 700,
+          color: "#fff",
+        }}
+      >
+        {index}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="truncate text-sm" style={{ fontWeight: 600 }}>
+            {host || ip}
+          </p>
+          {risk !== undefined && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: getRiskColor(risk) }}>
+              risk {Math.round(risk)}
+            </span>
+          )}
+        </div>
+        <p className="truncate" style={{ fontSize: "12px", color: "var(--text-ghost)" }}>
+          {host && <span style={{ fontFamily: "var(--font-mono)" }}>{ip} · </span>}
+          {label}
+        </p>
+      </div>
+    </li>
   );
 }

@@ -8,6 +8,7 @@ interface RiskScoreBadgeProps {
 function getRiskColor(score: number): string {
   if (score <= 20) return "var(--status-healthy)";
   if (score <= 50) return "var(--status-warning)";
+  if (score <= 75) return "var(--status-high)";
   return "var(--status-critical)";
 }
 
@@ -38,8 +39,8 @@ export default function RiskScoreBadge({ score, size = "md" }: RiskScoreBadgePro
         textTransform: "uppercase",
         letterSpacing: "0.1em",
         color: color,
-        background: `color-mix(in srgb, ${color} 18%, transparent)`,
-        border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
+        background: `color-mix(in srgb, ${color} 14%, transparent)`,
+        border: `1px solid color-mix(in srgb, ${color} 28%, transparent)`,
       }}
     >
       <span

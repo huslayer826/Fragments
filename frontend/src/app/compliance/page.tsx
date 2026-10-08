@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ComplianceUpload from "../components/ComplianceUpload";
+import PageHeader from "../components/PageHeader";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -74,29 +75,10 @@ export default function CompliancePage() {
 
   return (
     <div>
-      <p
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "10px",
-          textTransform: "uppercase",
-          letterSpacing: "0.16em",
-          color: "var(--text-ghost)",
-          marginBottom: "6px",
-        }}
-      >
-        Posture
-      </p>
-      <h2
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontWeight: 700,
-          fontSize: "32px",
-          letterSpacing: "-0.02em",
-          marginBottom: "32px",
-        }}
-      >
-        Compliance Assessment
-      </h2>
+      <PageHeader
+        title="Compliance"
+        subtitle="Map scan results against a control framework such as CIS, NIST or PCI-DSS."
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
